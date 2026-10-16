@@ -36,6 +36,20 @@
       .brand-product { color: #5f585b; font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
       .plant-tag { display: inline-flex; align-items: center; gap: 8px; color: #71696d; font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
       .plant-tag::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 4px var(--red-pale); }
+      .header-actions { display: flex; align-items: center; gap: 15px; }
+      .taylor-button { position: relative; display: block; width: 44px; height: 44px; padding: 0; overflow: hidden; border: 2px solid var(--red); border-radius: 50%; background: var(--red-pale); cursor: pointer; box-shadow: 0 3px 10px rgba(125, 28, 39, .16); transition: transform .18s, box-shadow .18s; }
+      .taylor-button:hover { transform: scale(1.06); box-shadow: 0 5px 15px rgba(125, 28, 39, .25); }
+      .taylor-button img { width: 100%; height: 100%; object-fit: cover; object-position: center 28%; }
+      .music-modal { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(35, 19, 22, .7); backdrop-filter: blur(5px); }
+      .music-modal[hidden] { display: none; }
+      .music-card { width: min(620px, 100%); overflow: hidden; border-radius: 16px; background: white; box-shadow: 0 24px 80px rgba(0,0,0,.3); }
+      .music-card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 16px; color: #332b2f; }
+      .music-card-title { font-size: 13px; font-weight: 800; }
+      .music-card-subtitle { margin-top: 3px; color: #83797d; font-size: 10px; }
+      .music-close { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: #f5eff0; color: #554b4f; font-size: 19px; cursor: pointer; }
+      .music-close:hover { background: var(--red-pale); color: var(--red); }
+      .music-frame { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #171214; }
+      .music-credit { padding: 10px 16px 13px; color: #83797d; font-size: 10px; line-height: 1.5; }
       main { padding: 46px 0 64px; }
       .intro { margin-bottom: 26px; }
       .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--red-dark); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
@@ -124,7 +138,9 @@
         .topbar-inner, main, footer { width: calc(100% - 26px); }
         .brand-script { font-size: 21px; }
         .brand-product { font-size: 10px; }
-        .plant-tag { font-size: 9px; }
+        .plant-tag { display: none; }
+        .header-actions { gap: 8px; }
+        .taylor-button { width: 40px; height: 40px; }
         .inputs, .results { padding: 19px 16px; }
         .fleet-head, .fleet-row { grid-template-columns: .95fr .88fr 1.2fr 29px; gap: 5px; }
         .fleet-head { font-size: 8px; }
@@ -146,9 +162,24 @@
         <div class="brand" aria-label="Coca-Cola, logística interna">
           <span class="brand-script">Coca-Cola</span><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Logística interna</span>
         </div>
-        <span class="plant-tag">Planificador de traslados</span>
+        <div class="header-actions">
+          <span class="plant-tag">Planificador de traslados</span>
+          <button class="taylor-button" id="taylor-button" type="button" aria-label="Reproducir Shake It Off de Taylor Swift" title="Reproducir Shake It Off">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Taylor_swift.jpg/250px-Taylor_swift.jpg" alt="Taylor Swift" loading="lazy" />
+          </button>
+        </div>
       </div>
     </header>
+    <div class="music-modal" id="music-modal" hidden>
+      <section class="music-card" role="dialog" aria-modal="true" aria-labelledby="music-title">
+        <div class="music-card-head">
+          <div><div class="music-card-title" id="music-title">Shake It Off · Taylor Swift</div><div class="music-card-subtitle">Video oficial · YouTube</div></div>
+          <button class="music-close" id="music-close" type="button" aria-label="Cerrar reproductor">×</button>
+        </div>
+        <iframe class="music-frame" id="music-frame" title="Shake It Off de Taylor Swift, video oficial" allow="autoplay; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        <div class="music-credit">Video oficial alojado por Taylor Swift en YouTube. Foto: Emazasm, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>.</div>
+      </section>
+    </div>
     <main>
       <section class="intro" aria-labelledby="page-title">
         <div class="eyebrow">Flota de carros</div>
@@ -203,7 +234,30 @@
       const resultEmpty = document.getElementById('result-empty');
       const totalOutput = document.getElementById('total');
       const statusOutput = document.getElementById('status');
+      const musicModal = document.getElementById('music-modal');
+      const musicFrame = document.getElementById('music-frame');
+      const taylorButton = document.getElementById('taylor-button');
       let previousTotal = null;
+
+      // La reproducción inicia solo después del clic explícito del usuario.
+      function openMusic() {
+        musicModal.hidden = false;
+        musicFrame.src = 'https://www.youtube-nocookie.com/embed/nfWlot6h_JM?autoplay=1&rel=0&playsinline=1';
+        document.getElementById('music-close').focus();
+      }
+
+      function closeMusic() {
+        musicModal.hidden = true;
+        musicFrame.src = '';
+        taylorButton.focus();
+      }
+
+      taylorButton.addEventListener('click', openMusic);
+      document.getElementById('music-close').addEventListener('click', closeMusic);
+      musicModal.addEventListener('click', (event) => { if (event.target === musicModal) closeMusic(); });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !musicModal.hidden) closeMusic();
+      });
 
       const format = (value) => value.toLocaleString('es-AR');
 
