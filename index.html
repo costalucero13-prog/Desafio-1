@@ -3,132 +3,138 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f4f6f8" />
-    <meta name="description" content="Calculá en segundos cuántos carros necesitás para trasladar tus piezas." />
-    <title>Carro listo — Planificador de traslado</title>
+    <meta name="theme-color" content="#e41e2b" />
+    <meta name="description" content="Planificá el traslado de piezas con la flota de carros disponible por área." />
+    <title>Carro listo | Logística Coca-Cola</title>
     <style>
       :root {
         color-scheme: light;
-        --ink: #172432;
-        --muted: #687681;
-        --line: #dfe5e9;
+        --red: #e41e2b;
+        --red-dark: #b81722;
+        --red-pale: #fff0f1;
+        --ink: #292628;
+        --muted: #787276;
+        --line: #e8e2e3;
         --surface: #fff;
-        --canvas: #f3f5f6;
-        --navy: #142536;
-        --navy-soft: #20374a;
-        --amber: #f3ab32;
-        --amber-soft: #fff3d8;
-        --green: #247756;
-        --shadow: 0 18px 48px rgba(24, 42, 56, .08);
+        --canvas: #f8f6f6;
+        --green: #167349;
+        --green-pale: #eaf6ef;
+        --amber: #a86a08;
+        --amber-pale: #fff4dc;
+        --shadow: 0 18px 48px rgba(73, 33, 39, .075);
       }
       * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-width: 320px;
-        background: var(--canvas);
-        color: var(--ink);
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
+      body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
       button, input { font: inherit; }
-      button:focus-visible, input:focus-visible { outline: 3px solid rgba(243, 171, 50, .55); outline-offset: 3px; }
-      .topbar { height: 72px; border-bottom: 1px solid #e5e9ec; background: rgba(255,255,255,.78); }
-      .topbar-inner, main, footer { width: min(1100px, calc(100% - 48px)); margin: 0 auto; }
+      button:focus-visible, input:focus-visible { outline: 3px solid rgba(228, 30, 43, .24); outline-offset: 2px; }
+      .topbar { height: 72px; background: #fff; border-bottom: 1px solid #eee8e9; }
+      .topbar-inner, main, footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
       .topbar-inner { height: 100%; display: flex; justify-content: space-between; align-items: center; }
-      .brand { display: flex; gap: 11px; align-items: center; font-size: 15px; font-weight: 750; letter-spacing: -.3px; }
-      .brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--navy); color: var(--amber); }
-      .brand-mark svg { width: 20px; height: 20px; }
-      .top-note { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-      main { padding: 54px 0 64px; }
-      .intro { margin-bottom: 30px; }
-      .eyebrow { display: flex; align-items: center; gap: 9px; color: #8b631e; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .13em; }
-      .eyebrow::before { width: 22px; height: 2px; content: ""; background: var(--amber); }
-      h1 { margin: 12px 0 9px; color: var(--navy); font-size: clamp(30px, 4vw, 42px); line-height: 1.1; letter-spacing: -.045em; }
-      .intro p { max-width: 560px; margin: 0; color: var(--muted); font-size: 15px; line-height: 1.65; }
-      .workspace { display: grid; grid-template-columns: minmax(280px, .88fr) minmax(0, 1.12fr); gap: 20px; align-items: stretch; }
-      .panel { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); }
-      .input-panel { padding: 28px; }
-      .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 26px; }
-      .panel-heading h2 { margin: 0; color: var(--navy); font-size: 17px; letter-spacing: -.02em; }
-      .step { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 8px; background: #eef2f4; color: #60717d; font-size: 12px; font-weight: 800; }
-      .field-label { display: block; margin-bottom: 10px; color: #52616d; font-size: 12px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
-      .number-wrap { position: relative; }
-      .number-wrap input { width: 100%; height: 56px; padding: 0 58px 0 16px; border: 1px solid #cfd8de; border-radius: 11px; background: #fbfcfc; color: var(--navy); font-size: 20px; font-weight: 700; transition: border-color .18s, box-shadow .18s, background .18s; }
-      .number-wrap input:focus { border-color: #d79729; outline: 0; background: #fff; box-shadow: 0 0 0 4px rgba(243,171,50,.16); }
-      .unit { position: absolute; top: 50%; right: 16px; color: #84919a; font-size: 13px; transform: translateY(-50%); pointer-events: none; }
-      .hint { min-height: 18px; margin: 8px 0 0; color: #8a969e; font-size: 12px; }
-      .capacity-block { margin-top: 25px; }
-      .preset-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
-      .preset { min-height: 58px; border: 1px solid #d8e0e4; border-radius: 11px; background: #fff; color: var(--navy); cursor: pointer; transition: transform .16s, border-color .16s, background .16s, box-shadow .16s; }
-      .preset:hover { transform: translateY(-2px); border-color: #e4b154; }
-      .preset[aria-pressed="true"] { border-color: #d79524; background: var(--amber-soft); box-shadow: inset 0 0 0 1px #d79524; }
-      .preset strong { display: block; font-size: 17px; line-height: 1.1; }
-      .preset span { display: block; margin-top: 4px; color: #78858e; font-size: 10px; font-weight: 650; }
-      .custom-option { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 13px 14px; border: 1px solid #e2e7ea; border-radius: 11px; background: #fbfcfc; transition: border-color .18s, background .18s; }
-      .custom-option.active { border-color: #d79524; background: #fffbf2; }
-      .custom-option input[type="radio"] { width: 16px; height: 16px; margin: 0; accent-color: #d79524; cursor: pointer; }
-      .custom-label { flex: 1; color: #52616d; font-size: 13px; font-weight: 700; cursor: pointer; }
-      .custom-input-wrap { display: flex; align-items: center; gap: 6px; }
-      .custom-input-wrap input { width: 72px; height: 36px; padding: 0 8px; border: 1px solid #d5dde2; border-radius: 8px; background: white; color: var(--navy); font-weight: 700; text-align: center; }
-      .custom-input-wrap input:disabled { color: #9aa5ac; background: #f1f3f4; cursor: not-allowed; }
-      .custom-input-wrap span { color: #7c8992; font-size: 11px; }
-      .form-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 25px; padding-top: 20px; border-top: 1px solid #edf0f2; }
-      .rule-note { display: flex; gap: 8px; align-items: flex-start; max-width: 230px; color: #73808a; font-size: 11px; line-height: 1.45; }
-      .rule-note svg { flex: 0 0 15px; margin-top: 1px; color: #b47a18; }
-      .clear-button { display: inline-flex; align-items: center; gap: 7px; padding: 9px 11px; border: 0; border-radius: 8px; background: transparent; color: #63717b; font-size: 12px; font-weight: 700; cursor: pointer; transition: background .15s, color .15s; }
-      .clear-button:hover { background: #f0f3f4; color: var(--navy); }
-      .result-panel { position: relative; overflow: hidden; min-height: 430px; padding: 30px; border-color: #243a4d; background: var(--navy); color: white; }
-      .result-panel::after { position: absolute; right: -90px; bottom: -110px; width: 320px; height: 320px; border: 1px solid rgba(255,255,255,.055); border-radius: 50%; content: ""; box-shadow: 0 0 0 32px rgba(255,255,255,.025), 0 0 0 64px rgba(255,255,255,.02); pointer-events: none; }
-      .result-top { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-      .result-top h2 { margin: 0; color: #d9e1e7; font-size: 14px; font-weight: 650; }
-      .live-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid rgba(255,255,255,.15); border-radius: 99px; color: #c0ccd5; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-      .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #6ed1a1; box-shadow: 0 0 0 3px rgba(110,209,161,.13); }
-      .total-row { position: relative; z-index: 1; display: flex; align-items: baseline; gap: 12px; margin-top: 13px; }
-      .total { color: var(--amber); font-size: clamp(66px, 8vw, 92px); font-weight: 800; line-height: .98; letter-spacing: -.07em; font-variant-numeric: tabular-nums; transition: transform .2s; }
-      .total.bump { animation: bump .28s ease-out; }
-      @keyframes bump { 0% { transform: scale(.95); } 65% { transform: scale(1.035); } 100% { transform: scale(1); } }
-      .total-unit { color: #bac6ce; font-size: 15px; font-weight: 650; }
-      .result-caption { position: relative; z-index: 1; margin: 4px 0 22px; color: #a9b7c1; font-size: 13px; }
-      .divider { position: relative; z-index: 1; height: 1px; background: rgba(255,255,255,.12); }
-      .breakdown-title { position: relative; z-index: 1; margin: 19px 0 13px; color: #d8e0e5; font-size: 11px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
-      .stats { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
-      .stat { min-height: 75px; padding: 12px 12px 10px; border: 1px solid rgba(255,255,255,.11); border-radius: 10px; background: rgba(255,255,255,.045); }
-      .stat-value { display: block; color: white; font-size: 19px; font-weight: 750; line-height: 1.2; font-variant-numeric: tabular-nums; }
-      .stat-label { display: block; margin-top: 5px; color: #a6b5bf; font-size: 10px; line-height: 1.3; }
-      .load-section { position: relative; z-index: 1; margin-top: 20px; }
-      .load-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; color: #c2cdd4; font-size: 11px; font-weight: 700; }
-      .load-count { color: #91a2ad; font-weight: 500; }
-      .cart-list { display: flex; flex-wrap: wrap; gap: 7px; }
-      .cart-chip { position: relative; display: flex; align-items: center; gap: 6px; min-width: 76px; padding: 7px 9px 7px 7px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: rgba(255,255,255,.055); color: #dbe3e8; font-size: 10px; font-weight: 700; animation: arrive .25s ease both; }
-      @keyframes arrive { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-      .cart-icon { width: 22px; height: 18px; color: #e9aa3b; }
-      .cart-chip.partial .cart-icon { color: #f7ce7d; }
-      .cart-chip span { white-space: nowrap; }
-      .cart-overflow { align-self: center; padding: 5px 7px; color: #a9b7c1; font-size: 10px; }
-      .empty-state { position: relative; z-index: 1; display: none; margin-top: 24px; padding: 20px; border: 1px dashed rgba(255,255,255,.18); border-radius: 12px; color: #bdc8d0; font-size: 13px; line-height: 1.5; }
-      .empty-state.visible { display: block; }
-      .error { color: #b84236 !important; }
-      .invalid { border-color: #cc665b !important; box-shadow: 0 0 0 3px rgba(204,102,91,.12) !important; }
-      footer { display: flex; justify-content: space-between; gap: 18px; padding: 0 0 26px; color: #8a969e; font-size: 11px; }
-      footer strong { color: #65737d; font-weight: 700; }
-      @media (max-width: 760px) {
-        .topbar { height: 64px; }
-        .topbar-inner, main, footer { width: min(100% - 32px, 540px); }
-        main { padding: 38px 0 44px; }
-        .intro { margin-bottom: 24px; }
-        .workspace { grid-template-columns: 1fr; gap: 14px; }
-        .input-panel { padding: 23px; }
-        .result-panel { min-height: 0; padding: 25px 23px; }
-        .total { font-size: 78px; }
+      .brand { display: flex; align-items: center; gap: 13px; }
+      .brand-script { color: var(--red); font-family: Georgia, "Times New Roman", serif; font-size: 24px; font-style: italic; font-weight: 700; letter-spacing: -.08em; }
+      .brand-divider { width: 1px; height: 25px; background: #e7dfe0; }
+      .brand-product { color: #5f585b; font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+      .plant-tag { display: inline-flex; align-items: center; gap: 8px; color: #71696d; font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+      .plant-tag::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 4px var(--red-pale); }
+      main { padding: 46px 0 64px; }
+      .intro { margin-bottom: 26px; }
+      .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--red-dark); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      .eyebrow::before { content: ""; width: 20px; height: 2px; background: var(--red); }
+      h1 { margin: 12px 0 9px; color: #292326; font-size: clamp(30px, 4vw, 42px); line-height: 1.1; letter-spacing: -.045em; }
+      .intro p { max-width: 630px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+      .layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(315px, .85fr); gap: 18px; align-items: start; }
+      .panel { border: 1px solid var(--line); border-radius: 17px; background: var(--surface); box-shadow: var(--shadow); }
+      .inputs { padding: 24px; }
+      .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 21px; }
+      .panel-heading h2 { margin: 0; color: #302a2d; font-size: 16px; letter-spacing: -.02em; }
+      .step { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 8px; background: var(--red-pale); color: var(--red-dark); font-size: 11px; font-weight: 850; }
+      .field-label { display: block; margin-bottom: 9px; color: #5f575b; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+      .quantity-row { display: flex; gap: 12px; align-items: center; }
+      .quantity-field { position: relative; max-width: 265px; flex: 1; }
+      .quantity-field input { width: 100%; height: 50px; padding: 0 64px 0 14px; border: 1px solid #ded6d8; border-radius: 10px; background: #fff; color: #302a2d; font-size: 19px; font-weight: 750; transition: border-color .18s, box-shadow .18s; }
+      .quantity-field input:focus, .fleet-row input:focus { border-color: var(--red); outline: 0; box-shadow: 0 0 0 3px rgba(228,30,43,.1); }
+      .unit { position: absolute; top: 50%; right: 14px; color: #8e8589; font-size: 11px; transform: translateY(-50%); pointer-events: none; }
+      .input-hint { margin: 7px 0 0; color: #938a8e; font-size: 11px; }
+      .section-break { display: flex; align-items: center; gap: 10px; margin: 23px 0 13px; color: #4d4549; font-size: 12px; font-weight: 800; }
+      .section-break .count { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: var(--red-pale); color: var(--red-dark); font-size: 10px; }
+      .section-break .secondary { margin-left: auto; color: #91888c; font-size: 10px; font-weight: 650; }
+      .fleet-head { display: grid; grid-template-columns: 1.08fr .94fr 1.5fr 32px; gap: 8px; padding: 0 7px 7px; color: #93898e; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+      .fleet-rows { display: grid; gap: 8px; }
+      .fleet-row { display: grid; grid-template-columns: 1.08fr .94fr 1.5fr 32px; gap: 8px; align-items: center; padding: 7px; border: 1px solid #eee8e9; border-radius: 11px; background: #fdfcfc; animation: row-in .2s ease-out both; }
+      @keyframes row-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+      .fleet-row input { width: 100%; min-width: 0; height: 38px; padding: 0 9px; border: 1px solid #e3dcde; border-radius: 8px; background: #fff; color: #382f33; font-size: 12px; font-weight: 650; transition: border-color .16s, box-shadow .16s; }
+      .fleet-row input::placeholder { color: #b0a8ab; font-weight: 450; }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .fleet-row .qty-cell { position: relative; }
+      .fleet-row .qty-cell input { padding-right: 32px; }
+      .fleet-row .qty-cell span { position: absolute; top: 50%; right: 8px; color: #9b9296; font-size: 9px; transform: translateY(-50%); pointer-events: none; }
+      .remove-row { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #a49a9e; cursor: pointer; transition: color .15s, background .15s; }
+      .remove-row:hover { background: var(--red-pale); color: var(--red); }
+      .remove-row svg { width: 15px; height: 15px; }
+      .fleet-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 11px; }
+      .add-row { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid #f0c9cc; border-radius: 8px; background: #fff9f9; color: var(--red-dark); font-size: 11px; font-weight: 800; cursor: pointer; transition: background .15s, border-color .15s; }
+      .add-row:hover { border-color: var(--red); background: var(--red-pale); }
+      .fleet-note { color: #91888c; font-size: 10px; }
+      .bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 19px; padding-top: 16px; border-top: 1px solid #f0ebec; }
+      .rule-note { display: flex; gap: 7px; align-items: flex-start; max-width: 300px; color: #82797d; font-size: 10px; line-height: 1.45; }
+      .rule-note svg { flex: 0 0 15px; margin-top: 1px; color: var(--red); }
+      .clear-button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 9px; border: 0; border-radius: 8px; background: transparent; color: #756c70; font-size: 11px; font-weight: 750; cursor: pointer; }
+      .clear-button:hover { background: #f5f1f2; color: #342d30; }
+      .results { position: sticky; top: 20px; overflow: hidden; padding: 24px; border: 0; background: var(--red); color: white; }
+      .results::before { position: absolute; top: -128px; right: -135px; width: 295px; height: 295px; border: 1px solid rgba(255,255,255,.13); border-radius: 50%; content: ""; box-shadow: 0 0 0 28px rgba(255,255,255,.045), 0 0 0 58px rgba(255,255,255,.035); pointer-events: none; }
+      .result-inner { position: relative; z-index: 1; }
+      .result-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: rgba(255,255,255,.87); font-size: 12px; font-weight: 750; }
+      .live { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid rgba(255,255,255,.25); border-radius: 99px; color: white; font-size: 9px; letter-spacing: .05em; text-transform: uppercase; }
+      .live::before { width: 6px; height: 6px; border-radius: 50%; background: white; content: ""; }
+      .total-row { display: flex; align-items: baseline; gap: 10px; margin-top: 13px; }
+      .total { font-size: clamp(68px, 8vw, 88px); font-weight: 850; line-height: .95; letter-spacing: -.075em; font-variant-numeric: tabular-nums; transition: transform .2s; }
+      .total.bump { animation: bump .27s ease-out; }
+      @keyframes bump { 0% { transform: scale(.94); } 70% { transform: scale(1.035); } 100% { transform: scale(1); } }
+      .total-unit { color: rgba(255,255,255,.88); font-size: 14px; font-weight: 700; }
+      .status { display: inline-flex; align-items: center; gap: 7px; margin-top: 11px; padding: 7px 9px; border: 1px solid rgba(255,255,255,.27); border-radius: 7px; background: rgba(255,255,255,.11); color: white; font-size: 10px; font-weight: 800; letter-spacing: .02em; }
+      .status.ok { background: white; color: var(--green); }
+      .status.warn { background: #fff4dc; color: #875800; border-color: #fff4dc; }
+      .status.neutral { background: rgba(255,255,255,.12); color: white; }
+      .status svg { width: 13px; height: 13px; }
+      .result-caption { margin: 12px 0 18px; color: rgba(255,255,255,.85); font-size: 11px; line-height: 1.5; }
+      .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,.28); border-bottom: 1px solid rgba(255,255,255,.28); }
+      .stat { min-height: 52px; padding: 2px 2px 2px 0; }
+      .stat-value { display: block; color: white; font-size: 18px; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; }
+      .stat-label { display: block; margin-top: 4px; color: rgba(255,255,255,.79); font-size: 9px; line-height: 1.35; }
+      .allocation-title { margin: 17px 0 9px; color: white; font-size: 10px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+      .allocation-list { display: grid; gap: 7px; }
+      .allocation { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 1px solid rgba(255,255,255,.22); border-radius: 9px; background: rgba(255,255,255,.1); animation: row-in .2s ease-out both; }
+      .allocation-area { color: white; font-size: 10px; font-weight: 800; }
+      .allocation-detail { margin-top: 3px; color: rgba(255,255,255,.78); font-size: 9px; }
+      .allocation-count { flex: 0 0 auto; color: white; font-size: 12px; font-weight: 850; text-align: right; }
+      .allocation-count small { display: block; margin-top: 2px; color: rgba(255,255,255,.75); font-size: 8px; font-weight: 600; }
+      .result-empty { display: none; margin-top: 17px; padding: 15px; border: 1px dashed rgba(255,255,255,.45); border-radius: 10px; color: white; font-size: 11px; line-height: 1.5; }
+      .error { color: #9a1b24 !important; }
+      .invalid { border-color: #ae2932 !important; box-shadow: 0 0 0 2px rgba(174,41,50,.12) !important; }
+      footer { display: flex; justify-content: space-between; gap: 16px; padding: 0 0 24px; color: #93898e; font-size: 10px; }
+      footer strong { color: var(--red); font-family: Georgia, "Times New Roman", serif; font-size: 13px; font-style: italic; }
+      @media (max-width: 850px) {
+        .topbar-inner, main, footer { width: min(100% - 34px, 650px); }
+        main { padding: 36px 0 44px; }
+        .layout { grid-template-columns: 1fr; gap: 14px; }
+        .results { position: relative; top: auto; }
       }
-      @media (max-width: 420px) {
+      @media (max-width: 480px) {
+        .topbar { height: 62px; }
         .topbar-inner, main, footer { width: calc(100% - 26px); }
-        .top-note { font-size: 9px; }
-        .input-panel, .result-panel { padding: 20px 17px; }
-        .stats { gap: 6px; }
-        .stat { padding: 10px 8px; }
-        .stat-value { font-size: 17px; }
-        .stat-label { font-size: 9px; }
+        .brand-script { font-size: 21px; }
+        .brand-product { font-size: 10px; }
+        .plant-tag { font-size: 9px; }
+        .inputs, .results { padding: 19px 16px; }
+        .fleet-head, .fleet-row { grid-template-columns: .95fr .88fr 1.2fr 29px; gap: 5px; }
+        .fleet-head { font-size: 8px; }
+        .fleet-row { padding: 6px; }
+        .fleet-row input { padding: 0 6px; font-size: 11px; }
+        .fleet-row .qty-cell input { padding-right: 25px; }
+        .fleet-row .qty-cell span { right: 5px; font-size: 8px; }
+        .remove-row { width: 28px; }
+        .fleet-note { display: none; }
+        .bottom-row { align-items: flex-start; }
         footer { flex-direction: column; gap: 5px; }
       }
       @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
@@ -137,189 +143,222 @@
   <body>
     <header class="topbar">
       <div class="topbar-inner">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 7h12v10H3zM15 10h3.2l2.8 3v4h-6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18" r="1.8" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="18" r="1.8" stroke="currentColor" stroke-width="1.8"/></svg></span>
-          <span>Carro listo</span>
+        <div class="brand" aria-label="Coca-Cola, logística interna">
+          <span class="brand-script">Coca-Cola</span><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Logística interna</span>
         </div>
-        <span class="top-note">Planificador de traslado</span>
+        <span class="plant-tag">Planificador de traslados</span>
       </div>
     </header>
     <main>
       <section class="intro" aria-labelledby="page-title">
-        <div class="eyebrow">Logística interna</div>
-        <h1 id="page-title">Cada pieza tiene su lugar.</h1>
-        <p>Calculá cuántos carros necesitás para mover tu lote. Las piezas que sobran también cuentan: ningún traslado se queda a mitad de camino.</p>
+        <div class="eyebrow">Flota de carros</div>
+        <h1 id="page-title">Cada pieza llega a destino.</h1>
+        <p>Indicá el tamaño del lote y los carros disponibles por área. Te mostramos cómo distribuir las piezas y si la flota alcanza para el traslado.</p>
       </section>
-      <div class="workspace">
-        <section class="panel input-panel" aria-labelledby="input-title">
+
+      <div class="layout">
+        <section class="panel inputs" aria-labelledby="input-title">
           <div class="panel-heading"><h2 id="input-title">Datos del traslado</h2><span class="step" aria-hidden="true">01</span></div>
           <label class="field-label" for="quantity">Cantidad total de piezas</label>
-          <div class="number-wrap"><input id="quantity" type="number" inputmode="numeric" min="1" step="1" placeholder="Ej. 37" aria-describedby="quantity-hint" /><span class="unit">piezas</span></div>
-          <p class="hint" id="quantity-hint">Ingresá un número entero mayor a cero.</p>
-          <div class="capacity-block">
-            <span class="field-label" id="capacity-label">Capacidad por carro</span>
-            <div class="preset-row" role="group" aria-labelledby="capacity-label">
-              <button class="preset" type="button" data-capacity="8" aria-pressed="true"><strong>8</strong><span>piezas / carro</span></button>
-              <button class="preset" type="button" data-capacity="10" aria-pressed="false"><strong>10</strong><span>piezas / carro</span></button>
-              <button class="preset" type="button" data-capacity="12" aria-pressed="false"><strong>12</strong><span>piezas / carro</span></button>
-            </div>
-            <div class="custom-option" id="custom-option">
-              <input id="custom-radio" type="radio" name="capacity" value="custom" aria-label="Usar capacidad personalizada" />
-              <label class="custom-label" for="custom-radio">Otro / personalizado</label>
-              <div class="custom-input-wrap"><input id="custom-capacity" type="number" inputmode="numeric" min="1" step="1" value="6" disabled aria-label="Capacidad personalizada en piezas por carro" /><span>piezas</span></div>
-            </div>
+          <div class="quantity-row">
+            <div class="quantity-field"><input id="quantity" type="number" inputmode="numeric" min="1" step="1" value="30" aria-describedby="quantity-hint" /><span class="unit">piezas</span></div>
           </div>
-          <div class="form-footer">
-            <div class="rule-note"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.5 17 5v4.7c0 4.1-2.8 6.6-7 7.8-4.2-1.2-7-3.7-7-7.8V5l7-2.5Z" stroke="currentColor" stroke-width="1.5"/><path d="m7 9.8 2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>El cálculo siempre redondea hacia arriba para incluir todas las piezas.</span></div>
-            <button class="clear-button" id="clear-button" type="button" aria-label="Limpiar datos del traslado"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2m2 0-.7 10H6.7L6 6m2.5 3v4m3-4v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Limpiar</button>
+          <p class="input-hint" id="quantity-hint">Ingresá un número entero mayor a cero.</p>
+
+          <div class="section-break"><span class="count">02</span><span>Carros disponibles</span><span class="secondary">Cantidad · capacidad · área</span></div>
+          <div class="fleet-head" aria-hidden="true"><span>Carros</span><span>Capacidad</span><span>Área</span><span></span></div>
+          <div class="fleet-rows" id="fleet-rows" aria-label="Grupos de carros disponibles"></div>
+          <div class="fleet-actions"><button class="add-row" id="add-row" type="button"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Agregar grupo</button><span class="fleet-note">Un grupo por capacidad y área</span></div>
+
+          <div class="bottom-row">
+            <div class="rule-note"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.5 17 5v4.7c0 4.1-2.8 6.6-7 7.8-4.2-1.2-7-3.7-7-7.8V5l7-2.5Z" stroke="currentColor" stroke-width="1.5"/><path d="m7 9.8 2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Se asignan primero los carros de mayor capacidad para cubrir el lote con la menor cantidad posible.</span></div>
+            <button class="clear-button" id="clear-button" type="button"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2m2 0-.7 10H6.7L6 6m2.5 3v4m3-4v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Limpiar</button>
           </div>
         </section>
 
-        <section class="panel result-panel" aria-labelledby="result-title" aria-live="polite">
-          <div class="result-top"><h2 id="result-title">Carros necesarios</h2><span class="live-badge"><span class="live-dot"></span>En tiempo real</span></div>
-          <div id="result-content">
+        <section class="panel results" aria-labelledby="result-title" aria-live="polite">
+          <div class="result-inner" id="result-content">
+            <div class="result-label"><span id="result-title">Carros asignados</span><span class="live">En tiempo real</span></div>
             <div class="total-row"><span class="total" id="total">—</span><span class="total-unit">carros</span></div>
-            <p class="result-caption" id="result-caption">Completá los datos para ver el cálculo.</p>
-            <div class="divider"></div>
-            <p class="breakdown-title">Desglose del lote</p>
-            <div class="stats">
-              <div class="stat"><span class="stat-value" id="full-count">—</span><span class="stat-label">Carros llenos</span></div>
-              <div class="stat"><span class="stat-value" id="partial-count">—</span><span class="stat-label">Carro parcial</span></div>
-              <div class="stat"><span class="stat-value" id="free-count">—</span><span class="stat-label">Espacio libre</span></div>
+            <div class="status neutral" id="status"></div>
+            <p class="result-caption" id="result-caption"></p>
+            <div class="stat-grid">
+              <div class="stat"><span class="stat-value" id="pieces-assigned">—</span><span class="stat-label">Piezas con carro</span></div>
+              <div class="stat"><span class="stat-value" id="pieces-unassigned">—</span><span class="stat-label">Piezas sin asignar</span></div>
+              <div class="stat"><span class="stat-value" id="capacity-total">—</span><span class="stat-label">Capacidad total disponible</span></div>
+              <div class="stat"><span class="stat-value" id="free-space">—</span><span class="stat-label">Espacio libre en asignados</span></div>
             </div>
-            <div class="load-section"><div class="load-heading"><span>Distribución de carga</span><span class="load-count" id="load-count">—</span></div><div class="cart-list" id="cart-list" aria-label="Representación de carros"></div></div>
+            <h3 class="allocation-title" id="allocation-title">Asignación por área</h3>
+            <div class="allocation-list" id="allocation-list"></div>
           </div>
-          <div class="empty-state" id="empty-state">Ingresá la cantidad de piezas para calcular los carros necesarios.</div>
+          <div class="result-empty" id="result-empty"></div>
         </section>
       </div>
     </main>
-    <footer><span><strong>Carro listo</strong> · Herramienta de planificación</span><span>Precisión para cada traslado.</span></footer>
+    <footer><span><strong>Coca-Cola</strong> · Herramienta de planificación logística</span><span>Precisión para cada traslado.</span></footer>
     <script>
-      // Referencias de los controles y de los indicadores que actualiza el cálculo.
       const quantityInput = document.getElementById('quantity');
-      const customRadio = document.getElementById('custom-radio');
-      const customCapacity = document.getElementById('custom-capacity');
-      const presetButtons = [...document.querySelectorAll('.preset')];
-      const totalOutput = document.getElementById('total');
-      const resultCaption = document.getElementById('result-caption');
-      const fullOutput = document.getElementById('full-count');
-      const partialOutput = document.getElementById('partial-count');
-      const freeOutput = document.getElementById('free-count');
-      const loadCount = document.getElementById('load-count');
-      const cartList = document.getElementById('cart-list');
-      const customOption = document.getElementById('custom-option');
-      const emptyState = document.getElementById('empty-state');
+      const fleetRows = document.getElementById('fleet-rows');
       const resultContent = document.getElementById('result-content');
-      let activeCapacity = 8;
+      const resultEmpty = document.getElementById('result-empty');
+      const totalOutput = document.getElementById('total');
+      const statusOutput = document.getElementById('status');
       let previousTotal = null;
 
-      // Lee la capacidad elegida; los valores inválidos se muestran como un error de entrada.
-      function getCapacity() {
-        const raw = customRadio.checked ? customCapacity.value : activeCapacity;
-        const value = Number(raw);
-        return Number.isSafeInteger(value) && value > 0 ? value : null;
+      const format = (value) => value.toLocaleString('es-AR');
+
+      // Crea un renglón editable para un grupo homogéneo de carros.
+      function addFleetRow({ count = '', capacity = '', area = '' } = {}) {
+        const row = document.createElement('div');
+        row.className = 'fleet-row';
+        row.innerHTML = `
+          <label class="qty-cell"><span class="sr-only">Cantidad de carros</span><input class="fleet-count" type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${count}" aria-label="Cantidad de carros"></label>
+          <label><span class="sr-only">Capacidad por carro</span><input class="fleet-capacity" type="number" inputmode="numeric" min="1" step="1" placeholder="8" value="${capacity}" aria-label="Capacidad por carro en piezas"></label>
+          <label><span class="sr-only">Área de la compañía</span><input class="fleet-area" type="text" maxlength="40" placeholder="Ej. Almacén" value="${area}" aria-label="Área de la compañía"></label>
+          <button class="remove-row" type="button" aria-label="Quitar grupo de carros"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>`;
+        row.querySelectorAll('input').forEach((input) => input.addEventListener('input', update));
+        row.querySelector('.remove-row').addEventListener('click', () => {
+          row.remove();
+          update();
+        });
+        fleetRows.append(row);
+        update();
       }
 
-      function renderCarts(full, hasPartial, partialPieces, capacity, totalCarts) {
-        cartList.replaceChildren();
-        // Se representan como máximo seis carros para mantener el panel legible con lotes grandes.
-        const visible = Math.min(totalCarts, 6);
-        for (let i = 0; i < visible; i++) {
-          const isPartial = hasPartial && i === full;
-          const chip = document.createElement('div');
-          chip.className = `cart-chip${isPartial ? ' partial' : ''}`;
-          chip.style.animationDelay = `${i * 35}ms`;
-          chip.innerHTML = '<svg class="cart-icon" viewBox="0 0 28 22" fill="none" aria-hidden="true"><path d="M2 3h3l2.2 11.2h14L24 7H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="18" r="1.5" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="18" r="1.5" stroke="currentColor" stroke-width="1.6"/></svg>';
-          const label = document.createElement('span');
-          label.textContent = `${isPartial ? partialPieces : capacity} / ${capacity}`;
-          chip.append(label);
-          cartList.append(chip);
+      // Lee filas válidas e ignora grupos vacíos o incompletos mientras se editan.
+      function readFleet() {
+        const groups = [];
+        let hasInvalid = false;
+        for (const row of fleetRows.querySelectorAll('.fleet-row')) {
+          const countInput = row.querySelector('.fleet-count');
+          const capacityInput = row.querySelector('.fleet-capacity');
+          const areaInput = row.querySelector('.fleet-area');
+          const countRaw = countInput.value.trim();
+          const capacityRaw = capacityInput.value.trim();
+          const area = areaInput.value.trim();
+          const count = Number(countRaw);
+          const capacity = Number(capacityRaw);
+          const rowHasValue = countRaw !== '' || capacityRaw !== '' || area !== '';
+          const valid = countRaw !== '' && capacityRaw !== '' && Number.isSafeInteger(count) && count >= 0 && Number.isSafeInteger(capacity) && capacity > 0 && area !== '';
+          countInput.classList.toggle('invalid', countRaw !== '' && (!Number.isSafeInteger(count) || count < 0));
+          capacityInput.classList.toggle('invalid', capacityRaw !== '' && (!Number.isSafeInteger(capacity) || capacity <= 0));
+          areaInput.classList.toggle('invalid', rowHasValue && area === '');
+          if (!rowHasValue) continue;
+          if (!valid) { hasInvalid = true; continue; }
+          if (count > 0) groups.push({ count, capacity, area });
         }
-        if (totalCarts > visible) {
-          const overflow = document.createElement('span');
-          overflow.className = 'cart-overflow';
-          overflow.textContent = `+ ${totalCarts - visible} más`;
-          cartList.append(overflow);
-        }
+        return { groups, hasInvalid };
       }
 
+      function showEmpty(message) {
+        resultContent.hidden = true;
+        resultEmpty.style.display = 'block';
+        resultEmpty.textContent = message;
+      }
+
+      // Reparte el lote en carros de mayor capacidad primero. El último carro puede ir parcial.
       function update() {
         const quantityRaw = quantityInput.value.trim();
         const quantity = Number(quantityRaw);
-        const capacity = getCapacity();
         const quantityValid = quantityRaw !== '' && Number.isSafeInteger(quantity) && quantity > 0;
-        const capacityValid = capacity !== null;
         quantityInput.classList.toggle('invalid', quantityRaw !== '' && !quantityValid);
-        customCapacity.classList.toggle('invalid', customRadio.checked && !capacityValid);
         document.getElementById('quantity-hint').classList.toggle('error', quantityRaw !== '' && !quantityValid);
+        const { groups, hasInvalid } = readFleet();
 
-        if (!quantityValid || !capacityValid) {
-          resultContent.hidden = true;
-          emptyState.classList.add('visible');
-          emptyState.textContent = !quantityValid && quantityRaw !== ''
-            ? 'La cantidad debe ser un número entero mayor a cero.'
-            : !capacityValid ? 'La capacidad personalizada debe ser un entero mayor a cero.'
-            : 'Ingresá la cantidad de piezas para calcular los carros necesarios.';
+        if (!quantityValid) {
+          showEmpty(quantityRaw ? 'La cantidad de piezas debe ser un número entero mayor a cero.' : 'Ingresá la cantidad de piezas para ver cuántos carros y qué áreas hacen falta.');
+          return;
+        }
+        if (hasInvalid) {
+          showEmpty('Completá cada grupo con una cantidad, capacidad y área válidas para actualizar la asignación.');
           return;
         }
 
         resultContent.hidden = false;
-        emptyState.classList.remove('visible');
-        // Ceiling garantiza que cualquier sobrante viaje en un carro adicional.
-        const totalCarts = Math.ceil(quantity / capacity);
-        const full = Math.floor(quantity / capacity);
-        const remainder = quantity % capacity;
-        const hasPartial = remainder > 0;
-        const free = hasPartial ? capacity - remainder : 0;
+        resultEmpty.style.display = 'none';
+        const ordered = [...groups].sort((a, b) => b.capacity - a.capacity);
+        const fleetCapacity = groups.reduce((sum, group) => sum + group.count * group.capacity, 0);
+        const allocations = [];
+        let remaining = quantity;
+        let cartsAssigned = 0;
+        let piecesAssigned = 0;
+        let capacityAssigned = 0;
 
-        totalOutput.textContent = totalCarts.toLocaleString('es-AR');
-        fullOutput.textContent = full.toLocaleString('es-AR');
-        partialOutput.textContent = hasPartial ? `${remainder} piezas` : '—';
-        freeOutput.textContent = `${free} piezas`;
-        resultCaption.textContent = hasPartial
-          ? `${quantity.toLocaleString('es-AR')} piezas distribuidas en ${totalCarts} carros.`
-          : `Lote completo: ${quantity.toLocaleString('es-AR')} piezas, sin sobrantes.`;
-        loadCount.textContent = `${quantity.toLocaleString('es-AR')} piezas · ${capacity} por carro`;
-        renderCarts(full, hasPartial, remainder, capacity, totalCarts);
-        if (previousTotal !== totalCarts) {
+        for (const group of ordered) {
+          if (remaining <= 0) break;
+          const neededHere = Math.min(group.count, Math.ceil(remaining / group.capacity));
+          if (neededHere <= 0) continue;
+          const groupCapacity = neededHere * group.capacity;
+          const loadedHere = Math.min(remaining, groupCapacity);
+          allocations.push({ ...group, carts: neededHere, pieces: loadedHere, free: groupCapacity - loadedHere });
+          cartsAssigned += neededHere;
+          piecesAssigned += loadedHere;
+          capacityAssigned += groupCapacity;
+          remaining -= loadedHere;
+        }
+
+        const unassigned = quantity - piecesAssigned;
+        const freeSpace = capacityAssigned - piecesAssigned;
+        totalOutput.textContent = format(cartsAssigned);
+        document.getElementById('pieces-assigned').textContent = format(piecesAssigned);
+        document.getElementById('pieces-unassigned').textContent = format(unassigned);
+        document.getElementById('capacity-total').textContent = format(fleetCapacity);
+        document.getElementById('free-space').textContent = format(freeSpace);
+        statusOutput.className = `status ${unassigned === 0 ? 'ok' : groups.length ? 'warn' : 'neutral'}`;
+        statusOutput.textContent = unassigned === 0 ? 'Flota suficiente' : groups.length ? `Faltan ${format(unassigned)} piezas por ubicar` : 'Agregá carros disponibles';
+        document.getElementById('result-caption').textContent = unassigned === 0
+          ? `${format(quantity)} piezas distribuidas en ${format(cartsAssigned)} carros de ${allocations.length} grupo${allocations.length === 1 ? '' : 's'}.`
+          : `${format(piecesAssigned)} de ${format(quantity)} piezas se pueden trasladar con los carros cargados.`;
+
+        const allocationList = document.getElementById('allocation-list');
+        allocationList.replaceChildren();
+        if (allocations.length === 0) {
+          const none = document.createElement('div');
+          none.className = 'allocation';
+          none.textContent = 'Todavía no hay carros asignados.';
+          allocationList.append(none);
+        }
+        allocations.forEach((allocation) => {
+          const item = document.createElement('div');
+          item.className = 'allocation';
+          const details = document.createElement('div');
+          const area = document.createElement('div');
+          area.className = 'allocation-area';
+          area.textContent = allocation.area;
+          const detail = document.createElement('div');
+          detail.className = 'allocation-detail';
+          detail.textContent = `${format(allocation.capacity)} piezas por carro · ${format(allocation.pieces)} piezas asignadas`;
+          details.append(area, detail);
+          const count = document.createElement('div');
+          count.className = 'allocation-count';
+          count.textContent = `${format(allocation.carts)} ${allocation.carts === 1 ? 'carro' : 'carros'}`;
+          const free = document.createElement('small');
+          free.textContent = `${format(allocation.free)} libres`;
+          count.append(free);
+          item.append(details, count);
+          allocationList.append(item);
+        });
+
+        if (previousTotal !== cartsAssigned) {
           totalOutput.classList.remove('bump');
           void totalOutput.offsetWidth;
           totalOutput.classList.add('bump');
         }
-        previousTotal = totalCarts;
+        previousTotal = cartsAssigned;
       }
 
-      presetButtons.forEach((button) => button.addEventListener('click', () => {
-        activeCapacity = Number(button.dataset.capacity);
-        customRadio.checked = false;
-        customCapacity.disabled = true;
-        presetButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
-        customOption.classList.remove('active');
-        update();
-      }));
-
-      customRadio.addEventListener('change', () => {
-        customCapacity.disabled = !customRadio.checked;
-        presetButtons.forEach((item) => item.setAttribute('aria-pressed', 'false'));
-        customOption.classList.toggle('active', customRadio.checked);
-        if (customRadio.checked) customCapacity.focus();
-        update();
-      });
-      customCapacity.addEventListener('input', update);
-      quantityInput.addEventListener('input', update);
+      document.getElementById('add-row').addEventListener('click', () => addFleetRow({ count: 1, capacity: 8, area: '' }));
       document.getElementById('clear-button').addEventListener('click', () => {
         quantityInput.value = '';
-        activeCapacity = 8;
-        customRadio.checked = false;
-        customCapacity.value = '6';
-        customCapacity.disabled = true;
-        customOption.classList.remove('active');
-        presetButtons.forEach((item, index) => item.setAttribute('aria-pressed', String(index === 0)));
+        fleetRows.replaceChildren();
         previousTotal = null;
-        update();
+        addFleetRow();
         quantityInput.focus();
       });
-      update();
+
+      // Ejemplo editable: 3 carros de 5 en Almacén y 2 de 9 en Producción.
+      addFleetRow({ count: 3, capacity: 5, area: 'Almacén' });
+      addFleetRow({ count: 2, capacity: 9, area: 'Producción' });
     </script>
   </body>
 </html>
