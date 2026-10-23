@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app'
+import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { addDoc, collection, getFirestore, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -10,7 +11,10 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 const firebaseConfigured = Object.values(firebaseConfig).every(Boolean)
-const db = firebaseConfigured ? getFirestore(initializeApp(firebaseConfig)) : null
+const app = firebaseConfigured ? initializeApp(firebaseConfig) : null
+const auth = app ? getAuth(app) : null
+const db = app ? getFirestore(app) : null
+const googleProvider = new GoogleAuthProvider()
 
 const quantityInput = document.getElementById('quantity');
       const fleetRows = document.getElementById('fleet-rows');
@@ -24,7 +28,15 @@ const quantityInput = document.getElementById('quantity');
       const saveButton = document.getElementById('save-calculation');
       const saveStatus = document.getElementById('save-status');
       const historyList = document.getElementById('history-list');
-      const operatorName = document.getElementById('operator-name');
+      const authPage = document.getElementById('auth-page');
+      const appShell = document.getElementById('app-shell');
+      const authMessage = document.getElementById('auth-message');
+      const signInButton = document.getElementById('google-sign-in');
+      const signOutButton = document.getElementById('sign-out');
+      const userName = document.getElementById('user-name');
+      const userAvatar = document.getElementById('user-avatar');
+      let currentUser = null;
+      let stopHistoryListener = null;
       let previousTotal = null;
       let latestCalculation = null;
 
@@ -150,7 +162,7 @@ const quantityInput = document.getElementById('quantity');
           result: { cartsAssigned, piecesAssigned, unassigned, fleetCapacity, freeSpace },
           allocations,
         };
-        saveButton.disabled = !firebaseConfigured;
+        saveButton.disabled = !currentUser;
         totalOutput.textContent = format(cartsAssigned);
         document.getElementById('pieces-assigned').textContent = format(piecesAssigned);
         document.getElementById('pieces-unassigned').textContent = format(unassigned);
@@ -206,7 +218,7 @@ const quantityInput = document.getElementById('quantity');
         head.className = 'history-entry-head';
         const name = document.createElement('span');
         name.className = 'history-name';
-        name.textContent = data.operatorName || 'Sin nombre';
+        name.textContent = 'Estimación';
         const date = document.createElement('time');
         date.className = 'history-date';
         const dateValue = data.createdAt?.toDate?.();
@@ -230,58 +242,43 @@ const quantityInput = document.getElementById('quantity');
       }
 
       async function saveCalculation() {
-        const name = operatorName.value.trim();
-        if (!firebaseConfigured) {
-          saveStatus.textContent = 'Completá las variables VITE_FIREBASE_* del archivo .env para conectar Firestore.';
-          return;
-        }
         if (!latestCalculation) {
           saveStatus.textContent = 'Completá los datos válidos antes de guardar.';
           return;
         }
-        if (!name) {
-          operatorName.focus();
-          saveStatus.textContent = 'Ingresá tu nombre para identificar este cálculo.';
+        if (!currentUser) {
+          saveStatus.textContent = 'Iniciá sesión con Google para guardar tu estimación.';
           return;
         }
 
         saveButton.disabled = true;
         saveStatus.textContent = 'Guardando cálculo…';
         try {
-          await addDoc(collection(db, 'calculationHistory'), {
-            operatorName: name,
+          await addDoc(collection(db, 'users', currentUser.uid, 'estimates'), {
             quantity: latestCalculation.quantity,
             groups: latestCalculation.groups,
             result: latestCalculation.result,
             allocations: latestCalculation.allocations,
             createdAt: serverTimestamp(),
           });
-          saveStatus.textContent = 'Cálculo guardado en el historial compartido.';
+          saveStatus.textContent = 'Estimación guardada en tu cuenta.';
         } catch (error) {
           console.error('No se pudo guardar el cálculo:', error);
-          saveStatus.textContent = 'No se pudo guardar. Revisá la conexión y las reglas de Firestore.';
+          saveStatus.textContent = 'No se pudo guardar. Verificá tu sesión y las reglas de Firestore.';
         } finally {
-          saveButton.disabled = !firebaseConfigured || !latestCalculation;
+          saveButton.disabled = !currentUser || !latestCalculation;
         }
       }
 
       saveButton.addEventListener('click', saveCalculation);
-      operatorName.addEventListener('input', () => {
-        if (saveStatus.textContent.includes('Ingresá tu nombre')) saveStatus.textContent = '';
-      });
-
-      if (!firebaseConfigured) {
-        historyList.replaceChildren(Object.assign(document.createElement('div'), {
-          className: 'history-message',
-          textContent: 'Completá las variables de Firebase en .env y reiniciá el servidor para ver el historial.',
-        }));
-        saveStatus.textContent = 'Configurá Firebase para guardar cálculos.';
-      } else {
-        const historyQuery = query(collection(db, 'calculationHistory'), orderBy('createdAt', 'desc'));
-        onSnapshot(historyQuery, (snapshot) => {
+      function listenToEstimates(user) {
+        stopHistoryListener?.();
+        const userEstimates = collection(db, 'users', user.uid, 'estimates');
+        const estimatesQuery = query(userEstimates, orderBy('createdAt', 'desc'));
+        stopHistoryListener = onSnapshot(estimatesQuery, (snapshot) => {
           historyList.replaceChildren();
           if (snapshot.empty) {
-            historyList.append(Object.assign(document.createElement('div'), { className: 'history-message', textContent: 'Todavía no hay cálculos guardados.' }));
+            historyList.append(Object.assign(document.createElement('div'), { className: 'history-message', textContent: 'Todavía no guardaste estimaciones.' }));
             return;
           }
           snapshot.forEach((documentSnapshot) => historyList.append(renderHistoryEntry(documentSnapshot.data())));
@@ -289,8 +286,75 @@ const quantityInput = document.getElementById('quantity');
           console.error('No se pudo leer el historial:', error);
           historyList.replaceChildren(Object.assign(document.createElement('div'), {
             className: 'history-message',
-            textContent: 'No se pudo cargar el historial. Revisá las reglas de lectura de Firestore.',
+            textContent: 'No se pudieron cargar tus estimaciones. Verificá las reglas de acceso de tu cuenta.',
           }));
+        });
+      }
+
+      signInButton.addEventListener('click', async () => {
+        signInButton.disabled = true;
+        authMessage.textContent = 'Abriendo Google…';
+        try {
+          await signInWithPopup(auth, googleProvider);
+        } catch (error) {
+          console.error('No se pudo iniciar sesión con Google:', error);
+          if (error.code === 'auth/popup-closed-by-user') {
+            authMessage.textContent = 'Se cerró la ventana de Google antes de completar el ingreso.';
+          } else if (error.code === 'auth/unauthorized-domain') {
+            authMessage.textContent = 'Agregá este dominio en Firebase Authentication → Settings → Authorized domains.';
+          } else if (error.code === 'auth/operation-not-allowed') {
+            authMessage.textContent = 'Habilitá Google en Firebase Authentication → Sign-in method.';
+          } else {
+            authMessage.textContent = 'No se pudo iniciar sesión. Revisá la configuración de Google en Firebase Authentication.';
+          }
+          signInButton.disabled = false;
+        }
+      });
+
+      signOutButton.addEventListener('click', async () => {
+        try {
+          await signOut(auth);
+        } catch (error) {
+          console.error('No se pudo cerrar la sesión:', error);
+          saveStatus.textContent = 'No se pudo cerrar la sesión. Intentá nuevamente.';
+        }
+      });
+
+      if (!firebaseConfigured) {
+        signInButton.disabled = true;
+        authMessage.textContent = 'Completá las variables VITE_FIREBASE_* y reiniciá el servidor.';
+      } else {
+        onAuthStateChanged(auth, (user) => {
+          currentUser = user;
+          if (!user) {
+            stopHistoryListener?.();
+            stopHistoryListener = null;
+            appShell.hidden = true;
+            authPage.hidden = false;
+            signInButton.disabled = false;
+            userName.textContent = '';
+            userAvatar.hidden = true;
+            historyList.replaceChildren(Object.assign(document.createElement('div'), {
+              className: 'history-message',
+              textContent: 'Iniciá sesión para consultar tus estimaciones.',
+            }));
+            saveButton.disabled = true;
+            return;
+          }
+
+          authPage.hidden = true;
+          appShell.hidden = false;
+          userName.textContent = user.displayName || user.email || 'Mi cuenta';
+          userAvatar.src = user.photoURL || '';
+          userAvatar.hidden = !user.photoURL;
+          authMessage.textContent = '';
+          saveButton.disabled = !latestCalculation;
+          listenToEstimates(user);
+        }, (error) => {
+          console.error('Error al comprobar la sesión:', error);
+          authPage.hidden = false;
+          appShell.hidden = true;
+          authMessage.textContent = 'No se pudo validar la sesión. Revisá la configuración de Firebase Authentication.';
         });
       }
 

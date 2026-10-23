@@ -1,38 +1,26 @@
 # Carro listo
 
-Planificador de traslados con historial compartido en Cloud Firestore.
+Planificador de traslados con inicio de sesión de Google y estimaciones privadas por cuenta.
 
-## Configurar Firebase
+## Firebase Authentication
 
-1. En Firebase Console, creá o elegí un proyecto, registrá una aplicación web y creá una base de datos de Cloud Firestore.
-2. Copiá los valores de configuración de la aplicación web en `.env` (podés usar `.env.example` como referencia). Las variables `VITE_*` se incluyen en el código que recibe el navegador; la configuración web de Firebase no es una contraseña.
-3. En las reglas de Firestore, habilitá lectura para visitantes y creación de documentos para guardar cálculos. Como la página no tiene inicio de sesión, cada persona escribe el nombre que quiere mostrar. Las reglas siguientes permiten consultar el historial y crear registros, pero no editar ni borrar registros existentes:
+1. En Firebase Console, habilitá **Authentication → Sign-in method → Google**.
+2. En **Authentication → Settings → Authorized domains**, agregá el dominio publicado en Vercel y cualquier dominio local que uses para desarrollo.
+3. Completá `.env` con la configuración de la app web de Firebase. En Vercel, cargá las mismas variables `VITE_FIREBASE_*` en las variables de entorno y volvé a desplegar.
 
-```text
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /calculationHistory/{entryId} {
-      allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly([
-          'operatorName', 'quantity', 'groups', 'result', 'allocations', 'createdAt'
-        ])
-        && request.resource.data.operatorName is string
-        && request.resource.data.operatorName.size() > 0
-        && request.resource.data.operatorName.size() <= 80
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity > 0
-        && request.resource.data.groups is list
-        && request.resource.data.result is map
-        && request.resource.data.allocations is list
-        && request.resource.data.createdAt == request.time;
-      allow update, delete: if false;
-    }
-  }
-}
-```
+La app usa Google Popup Sign-in. Cada estimación se guarda en `users/{uid}/estimates/{estimateId}`. La app solo consulta la subcolección del usuario autenticado.
 
-La app conserva y muestra todos los cálculos en tiempo real, ordenados del más reciente al más antiguo. El historial está disponible para cualquiera que visite el sitio conectado a ese proyecto de Firebase.
+## Reglas de Cloud Firestore
+
+Publicá las reglas de [firestore.rules](./firestore.rules) desde **Firestore Database → Rules**. Reemplazá el conjunto de reglas anterior completo y pulsá **Publish**. Las reglas anteriores del historial compartido no deben quedar activas: las reglas de Firestore se combinan y cualquier regla permisiva que coincida podría seguir dando acceso.
+
+Las reglas nuevas limitan lectura y creación al UID autenticado de la ruta. Los visitantes no autenticados y otros usuarios no pueden leer estas estimaciones. La app no permite editar ni borrar estimaciones.
+
+## Eliminar el historial compartido anterior
+
+La app nueva deja de leer y escribir `calculationHistory`, pero las reglas de seguridad no borran documentos que ya están en Firestore. Después de publicar la app nueva y confirmar que Vercel sirve esa versión, eliminá la colección anterior en **Firestore Database → Data**: abrí `calculationHistory`, elegí **Delete collection** y confirmá. Esto borra permanentemente las estimaciones compartidas anteriores.
+
+No hay credenciales administrativas de Firebase en este repositorio ni en el entorno de desarrollo, así que la colección debe eliminarse desde la consola de Firebase con una cuenta que tenga permisos de administración.
 
 ## Desarrollo
 

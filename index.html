@@ -27,6 +27,21 @@
       body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
       button, input { font: inherit; }
       button:focus-visible, input:focus-visible { outline: 3px solid rgba(228, 30, 43, .24); outline-offset: 2px; }
+      .auth-page { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; background: var(--canvas); }
+      .auth-page[hidden] { display: none; }
+      .auth-card { width: min(420px, 100%); padding: 34px; border: 1px solid var(--line); border-radius: 18px; background: white; box-shadow: var(--shadow); text-align: center; }
+      .auth-mark { color: var(--red); font-family: Georgia, "Times New Roman", serif; font-size: 27px; font-style: italic; font-weight: 700; letter-spacing: -.08em; }
+      .auth-card h1 { margin: 17px 0 8px; font-size: 25px; letter-spacing: -.04em; }
+      .auth-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+      .google-sign-in { display: inline-flex; justify-content: center; align-items: center; gap: 11px; width: 100%; margin-top: 24px; padding: 12px 16px; border: 1px solid #d8d3d4; border-radius: 9px; background: white; color: #302a2d; font-size: 13px; font-weight: 750; cursor: pointer; }
+      .google-sign-in:hover { background: #faf8f8; border-color: #bdb5b7; }
+      .google-sign-in:disabled { cursor: wait; opacity: .65; }
+      .auth-message { min-height: 18px; margin-top: 12px !important; color: var(--red-dark) !important; font-size: 11px !important; }
+      .user-session { display: flex; align-items: center; gap: 9px; }
+      .user-avatar { width: 31px; height: 31px; border-radius: 50%; object-fit: cover; }
+      .user-name { max-width: 190px; overflow: hidden; color: #51494d; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+      .sign-out { padding: 8px 10px; border: 1px solid #e8e2e3; border-radius: 8px; background: white; color: #645b5f; font-size: 10px; font-weight: 750; cursor: pointer; }
+      .sign-out:hover { border-color: var(--red); color: var(--red-dark); }
       .topbar { height: 72px; background: #fff; border-bottom: 1px solid #eee8e9; }
       .topbar-inner, main, footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
       .topbar-inner { height: 100%; display: flex; justify-content: space-between; align-items: center; }
@@ -173,6 +188,19 @@
     </style>
   </head>
   <body>
+    <section class="auth-page" id="auth-page" aria-labelledby="auth-title">
+      <div class="auth-card">
+        <div class="auth-mark">Coca-Cola</div>
+        <h1 id="auth-title">Ingresá para continuar</h1>
+        <p>Iniciá sesión con Google para guardar y consultar tus propias estimaciones.</p>
+        <button class="google-sign-in" id="google-sign-in" type="button">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 38.03 46.98 31.9 46.98 24.55Z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.12.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.73-6c-2.14 1.44-4.89 2.3-8.17 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z"/></svg>
+          Continuar con Google
+        </button>
+        <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+    <div id="app-shell" hidden>
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand" aria-label="Coca-Cola, logística interna">
@@ -180,6 +208,11 @@
         </div>
         <div class="header-actions">
           <span class="plant-tag">Planificador de traslados</span>
+          <div class="user-session">
+            <img class="user-avatar" id="user-avatar" alt="" hidden />
+            <span class="user-name" id="user-name"></span>
+            <button class="sign-out" id="sign-out" type="button">Cerrar sesión</button>
+          </div>
           <button class="taylor-button" id="taylor-button" type="button" aria-label="Reproducir Shake It Off de Taylor Swift" title="Reproducir Shake It Off">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Taylor_swift.jpg/250px-Taylor_swift.jpg" alt="Taylor Swift" loading="lazy" />
           </button>
@@ -206,10 +239,6 @@
       <div class="layout">
         <section class="panel inputs" aria-labelledby="input-title">
           <div class="panel-heading"><h2 id="input-title">Datos del traslado</h2><span class="step" aria-hidden="true">01</span></div>
-          <div class="name-field">
-            <label class="field-label" for="operator-name">Tu nombre</label>
-            <input id="operator-name" type="text" maxlength="80" autocomplete="name" placeholder="Ingresá tu nombre" />
-          </div>
           <label class="field-label" for="quantity">Cantidad total de piezas</label>
           <div class="quantity-row">
             <div class="quantity-field"><input id="quantity" type="number" inputmode="numeric" min="1" step="1" value="30" aria-describedby="quantity-hint" /><span class="unit">piezas</span></div>
@@ -241,19 +270,20 @@
             </div>
             <h3 class="allocation-title" id="allocation-title">Asignación por área</h3>
             <div class="allocation-list" id="allocation-list"></div>
-            <button class="save-calculation" id="save-calculation" type="button">Guardar cálculo en historial</button>
+            <button class="save-calculation" id="save-calculation" type="button">Guardar estimación</button>
             <p class="save-status" id="save-status" role="status" aria-live="polite"></p>
           </div>
           <div class="result-empty" id="result-empty"></div>
         </section>
       </div>
       <section class="panel history-panel" aria-labelledby="history-title">
-        <div class="panel-heading"><h2 id="history-title">Historial compartido</h2><span class="step" aria-hidden="true">03</span></div>
-        <p class="history-intro">Cálculos guardados por todas las personas que usan esta página.</p>
+        <div class="panel-heading"><h2 id="history-title">Mis estimaciones</h2><span class="step" aria-hidden="true">03</span></div>
+        <p class="history-intro">Solo vos podés consultar las estimaciones guardadas en tu cuenta.</p>
         <div class="history-list" id="history-list" aria-live="polite"><div class="history-message">Conectando con el historial…</div></div>
       </section>
     </main>
     <footer><span><strong>Coca-Cola</strong> · Herramienta de planificación logística</span><span>Precisión para cada traslado.</span></footer>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
